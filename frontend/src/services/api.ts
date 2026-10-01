@@ -7,12 +7,14 @@ import {
   User,
 } from '../types';
 
+export const DEFAULT_BACKEND_URL = 'https://welcome-onebite.onrender.com';
+
 const rawApiBase = (import.meta as any).env?.VITE_API_BASE_URL;
 export const API_BASE = rawApiBase
   ? rawApiBase.endsWith('/api')
     ? rawApiBase
     : `${rawApiBase.replace(/\/$/, '')}/api`
-  : '/api';
+  : `${DEFAULT_BACKEND_URL}/api`;
 
 export const getFullImageUrl = (url?: string): string => {
   if (!url) return '';
@@ -20,8 +22,9 @@ export const getFullImageUrl = (url?: string): string => {
     return url;
   }
   const rawBase = (import.meta as any).env?.VITE_BACKEND_URL || (import.meta as any).env?.VITE_API_BASE_URL;
-  if (!rawBase) return url;
-  const backendBase = rawBase.replace(/\/api\/?$/, '').replace(/\/$/, '');
+  const backendBase = rawBase
+    ? rawBase.replace(/\/api\/?$/, '').replace(/\/$/, '')
+    : DEFAULT_BACKEND_URL;
   return url.startsWith('/') ? `${backendBase}${url}` : `${backendBase}/${url}`;
 };
 
@@ -60,14 +63,33 @@ const authHeaders = (): Record<string, string> => {
   return headers;
 };
 
+const parseJsonResponse = async (res: Response): Promise<any> => {
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await res.text();
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+      throw new Error(
+        'Backend server returned HTML instead of JSON. The backend is waking up or the API endpoint is unavailable. Please wait a few seconds and try again.'
+      );
+    }
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error(`Unexpected server response: ${text.slice(0, 100)}`);
+    }
+  }
+  return res.json();
+};
+
 export const api = {
   // Public APIs
   async getPublicBusiness(slug = 'onebite-bakery'): Promise<PublicBusinessData> {
     const res = await fetch(`${API_BASE}/public/business/${slug}`);
+    const data = await parseJsonResponse(res);
     if (!res.ok) {
-      throw new Error(`Failed to load business profile: ${res.statusText}`);
+      throw new Error(data.message || `Failed to load business profile: ${res.statusText}`);
     }
-    return res.json();
+    return data;
   },
 
   async trackPageView(slug: string, referrer = ''): Promise<void> {
@@ -101,7 +123,7 @@ export const api = {
     if (color) params.append('color', color);
     if (bgcolor) params.append('bgcolor', bgcolor);
     const res = await fetch(`${API_BASE}/public/business/${slug}/qr?${params.toString()}`);
-    return res.json();
+    return parseJsonResponse(res);
   },
 
   // Auth APIs
@@ -111,7 +133,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok || !data.success) {
       throw new Error(data.message || 'Login failed');
     }
@@ -125,7 +147,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin }),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok || !data.success) {
       throw new Error(data.message || 'Incorrect PIN code');
     }
@@ -137,7 +159,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/auth/me`, {
       headers: authHeaders(),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok || !data.success) {
       throw new Error(data.message || 'Session expired');
     }
@@ -150,7 +172,7 @@ export const api = {
       headers: authHeaders(),
       body: JSON.stringify({ newPin }),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok || !data.success) {
       throw new Error(data.message || 'Failed to update PIN');
     }
@@ -161,7 +183,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/admin/businesses`, {
       headers: authHeaders(),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to load businesses');
     return data;
   },
@@ -169,7 +191,7 @@ export const api = {
   async getAdminBusiness(businessId?: string): Promise<{ business: BusinessProfile }> {
     const url = businessId ? `${API_BASE}/admin/business?businessId=${businessId}` : `${API_BASE}/admin/business`;
     const res = await fetch(url, { headers: authHeaders() });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to load business profile');
     return data;
   },
@@ -180,7 +202,7 @@ export const api = {
       headers: authHeaders(),
       body: JSON.stringify(business),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to update business');
     return data;
   },
@@ -191,7 +213,7 @@ export const api = {
       headers: authHeaders(),
       body: JSON.stringify(business),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to create business');
     return data;
   },
@@ -200,7 +222,7 @@ export const api = {
   async getAdminLinks(businessId?: string): Promise<{ links: BusinessLink[] }> {
     const url = businessId ? `${API_BASE}/admin/links?businessId=${businessId}` : `${API_BASE}/admin/links`;
     const res = await fetch(url, { headers: authHeaders() });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to load links');
     return data;
   },
@@ -211,7 +233,7 @@ export const api = {
       headers: authHeaders(),
       body: JSON.stringify(linkData),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to create link');
     return data;
   },
@@ -222,7 +244,7 @@ export const api = {
       headers: authHeaders(),
       body: JSON.stringify(linkData),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to update link');
     return data;
   },
@@ -232,7 +254,7 @@ export const api = {
       method: 'DELETE',
       headers: authHeaders(),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to delete link');
   },
 
@@ -241,7 +263,7 @@ export const api = {
       method: 'POST',
       headers: authHeaders(),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to duplicate link');
     return data;
   },
@@ -251,7 +273,7 @@ export const api = {
       method: 'PATCH',
       headers: authHeaders(),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to toggle link');
     return data;
   },
@@ -262,7 +284,7 @@ export const api = {
       headers: authHeaders(),
       body: JSON.stringify({ items }),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to reorder links');
   },
 
@@ -270,7 +292,7 @@ export const api = {
   async getHours(businessId?: string): Promise<{ hours: BusinessHours }> {
     const url = businessId ? `${API_BASE}/admin/hours?businessId=${businessId}` : `${API_BASE}/admin/hours`;
     const res = await fetch(url, { headers: authHeaders() });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to load hours');
     return data;
   },
@@ -281,7 +303,7 @@ export const api = {
       headers: authHeaders(),
       body: JSON.stringify(hoursData),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to update hours');
     return data;
   },
@@ -290,7 +312,7 @@ export const api = {
   async getAppearance(businessId?: string): Promise<{ appearance: BusinessAppearance }> {
     const url = businessId ? `${API_BASE}/admin/appearance?businessId=${businessId}` : `${API_BASE}/admin/appearance`;
     const res = await fetch(url, { headers: authHeaders() });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to load appearance');
     return data;
   },
@@ -301,7 +323,7 @@ export const api = {
       headers: authHeaders(),
       body: JSON.stringify(appearanceData),
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to update appearance');
     return data;
   },
@@ -310,7 +332,7 @@ export const api = {
   async getAnalytics(businessId?: string, days = '30'): Promise<any> {
     const url = `${API_BASE}/admin/analytics?days=${days}${businessId ? `&businessId=${businessId}` : ''}`;
     const res = await fetch(url, { headers: authHeaders() });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to load analytics');
     return data;
   },
@@ -331,7 +353,7 @@ export const api = {
       headers,
       body: formData,
     });
-    const data = await res.json();
+    const data = await parseJsonResponse(res);
     if (!res.ok || !data.success) {
       throw new Error(data.message || 'Image upload failed');
     }
