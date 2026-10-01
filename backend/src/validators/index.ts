@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // URL validator ensuring safe protocols
 export const safeUrlSchema = z.string().trim().refine(
-  (val) => {
+  (val: string) => {
     if (!val || val === '') return true;
     const lower = val.toLowerCase();
     if (lower.startsWith('javascript:') || lower.startsWith('data:') || lower.startsWith('vbscript:')) {
