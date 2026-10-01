@@ -5,6 +5,9 @@ import { User, IUser } from '../models/User';
 import { Business } from '../models/Business';
 import { AuthRequest } from '../middleware/auth';
 
+// 2 months in milliseconds: 60 days * 24 hours * 60 minutes * 60 seconds * 1000 ms = 5,184,000,000 ms
+export const TWO_MONTHS_MS = 60 * 24 * 60 * 60 * 1000;
+
 const generateToken = (user: IUser): string => {
   const secret = process.env.JWT_SECRET || 'super_secret_jwt_key_business_link_hub_2026_standalone';
   return jwt.sign(
@@ -14,8 +17,18 @@ const generateToken = (user: IUser): string => {
       role: user.role,
     },
     secret,
-    { expiresIn: '30d' }
+    { expiresIn: '60d' } // 2 months validity
   );
+};
+
+export const setAuthCookie = (res: Response, token: string): void => {
+  res.cookie('hub_auth_token', token, {
+    maxAge: TWO_MONTHS_MS,
+    httpOnly: false, // Accessible to client scripts as well
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+  });
 };
 
 export const login = async (req: Request, res: Response): Promise<void> => {
@@ -40,6 +53,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const token = generateToken(user);
+    setAuthCookie(res, token);
 
     res.json({
       success: true,
@@ -99,6 +113,7 @@ export const pinLogin = async (req: Request, res: Response): Promise<void> => {
     }
 
     const token = generateToken(user);
+    setAuthCookie(res, token);
 
     res.json({
       success: true,
@@ -163,4 +178,9 @@ export const updatePin = async (req: AuthRequest, res: Response): Promise<void> 
     console.error('updatePin error:', error);
     res.status(500).json({ success: false, message: 'Failed to update PIN' });
   }
+};
+
+export const logout = async (_req: Request, res: Response): Promise<void> => {
+  res.clearCookie('hub_auth_token', { path: '/' });
+  res.json({ success: true, message: 'Logged out successfully' });
 };

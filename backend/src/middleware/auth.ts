@@ -14,7 +14,12 @@ export const authenticateToken = async (
 ): Promise<void> => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+    let token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+    // Check cookie fallback (2-month persistent session cookie)
+    if (!token && (req as any).cookies?.hub_auth_token) {
+      token = (req as any).cookies.hub_auth_token;
+    }
 
     if (!token) {
       res.status(401).json({ success: false, message: 'Authentication required. No token provided.' });

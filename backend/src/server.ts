@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
@@ -50,9 +51,10 @@ const analyticsLimiter = rateLimit({
 app.use('/api/public/business/:slug/view', analyticsLimiter);
 app.use('/api/public/business/:slug/links/:linkId/click', analyticsLimiter);
 
-// Body parsers
+// Body parsers & Cookie parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
 // Static uploads folder
 const uploadsPath = path.join(__dirname, '../uploads');

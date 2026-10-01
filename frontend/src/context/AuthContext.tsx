@@ -87,6 +87,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
+    api.logout();
     removeAuthToken();
     setUser(null);
   };

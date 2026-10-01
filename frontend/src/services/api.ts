@@ -28,16 +28,48 @@ export const getFullImageUrl = (url?: string): string => {
   return url.startsWith('/') ? `${backendBase}${url}` : `${backendBase}/${url}`;
 };
 
+// 2 months in seconds: 60 days * 24 hours * 3600 seconds = 5,184,000 seconds
+export const TWO_MONTHS_SECONDS = 60 * 24 * 60 * 60;
+
 export const getAuthToken = (): string | null => {
-  return localStorage.getItem('hub_auth_token');
+  try {
+    const localToken = localStorage.getItem('hub_auth_token');
+    if (localToken) return localToken;
+  } catch (e) {}
+
+  // Fallback to 2-month persistent cookie if localStorage was cleared
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(/(?:^|;\s*)hub_auth_token=([^;]+)/);
+    if (match) {
+      const cookieToken = decodeURIComponent(match[1]);
+      try {
+        localStorage.setItem('hub_auth_token', cookieToken);
+      } catch (e) {}
+      return cookieToken;
+    }
+  }
+  return null;
 };
 
 export const setAuthToken = (token: string): void => {
-  localStorage.setItem('hub_auth_token', token);
+  try {
+    localStorage.setItem('hub_auth_token', token);
+  } catch (e) {}
+
+  // Set persistent cookie for 2 months (60 days)
+  if (typeof document !== 'undefined') {
+    document.cookie = `hub_auth_token=${encodeURIComponent(token)}; max-age=${TWO_MONTHS_SECONDS}; path=/; SameSite=Lax`;
+  }
 };
 
 export const removeAuthToken = (): void => {
-  localStorage.removeItem('hub_auth_token');
+  try {
+    localStorage.removeItem('hub_auth_token');
+  } catch (e) {}
+
+  if (typeof document !== 'undefined') {
+    document.cookie = 'hub_auth_token=; max-age=0; path=/; SameSite=Lax';
+  }
 };
 
 export const getActiveBusinessId = (): string | null => {
@@ -131,6 +163,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ email, password }),
     });
     const data = await parseJsonResponse(res);
@@ -145,6 +178,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/auth/pin-login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ pin }),
     });
     const data = await parseJsonResponse(res);
@@ -155,9 +189,22 @@ export const api = {
     return data;
   },
 
+  async logout(): Promise<void> {
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (e) {
+      // Non-blocking on network issues
+    }
+    removeAuthToken();
+  },
+
   async getMe(): Promise<{ user: User }> {
     const res = await fetch(`${API_BASE}/auth/me`, {
       headers: authHeaders(),
+      credentials: 'include',
     });
     const data = await parseJsonResponse(res);
     if (!res.ok || !data.success) {
@@ -170,6 +217,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/auth/pin`, {
       method: 'PUT',
       headers: authHeaders(),
+      credentials: 'include',
       body: JSON.stringify({ newPin }),
     });
     const data = await parseJsonResponse(res);
