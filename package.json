@@ -1,0 +1,21 @@
+{
+  "name": "business-link-hub",
+  "version": "1.0.0",
+  "description": "Standalone Production-Ready Business Link Hub with Admin Panel and Database",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "test": "npm run test --prefix backend",
+    "seed": "npm run seed --prefix backend"
+  },
+  "keywords": [
+    "link-in-bio",
+    "business-profile",
+    "qr-code",
+    "digital-business-card"
+  ],
+  "author": "Standalone LinkHub",
+  "license": "ISC"
+}
