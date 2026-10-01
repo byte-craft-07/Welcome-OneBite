@@ -18,7 +18,7 @@ import {
   Copy,
   Check,
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api, getFullImageUrl } from '../services/api';
 import { PublicBusinessData, BusinessLink } from '../types';
 import { IconRenderer } from '../components/IconRenderer';
 import { AdminQuickAccessModal } from '../components/AdminQuickAccessModal';
@@ -222,7 +222,7 @@ export const PublicBusinessPage: React.FC = () => {
       {business.coverImageUrl && (
         <div className="w-full h-36 md:h-52 relative overflow-hidden bg-stone-200">
           <img
-            src={business.coverImageUrl}
+            src={getFullImageUrl(business.coverImageUrl)}
             alt={`${business.name} cover`}
             className="w-full h-full object-cover"
           />
@@ -243,7 +243,7 @@ export const PublicBusinessPage: React.FC = () => {
             >
               {business.logoUrl ? (
                 <img
-                  src={business.logoUrl}
+                  src={getFullImageUrl(business.logoUrl)}
                   alt={business.name}
                   className="w-full h-full object-cover rounded-full"
                 />
@@ -429,7 +429,7 @@ export const PublicBusinessPage: React.FC = () => {
                       {link.imageUrl ? (
                         <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 shadow-sm">
                           <img
-                            src={link.imageUrl}
+                            src={getFullImageUrl(link.imageUrl)}
                             alt={link.title}
                             className="w-full h-full object-cover"
                           />
@@ -510,7 +510,7 @@ export const PublicBusinessPage: React.FC = () => {
             </p>
             {business.aboutSection.imageUrl && (
               <img
-                src={business.aboutSection.imageUrl}
+                src={getFullImageUrl(business.aboutSection.imageUrl)}
                 alt="About"
                 className="mt-3.5 w-full h-44 object-cover rounded-2xl shadow-sm"
               />

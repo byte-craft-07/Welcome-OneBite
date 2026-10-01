@@ -14,7 +14,7 @@ import {
   Eye,
   Info,
 } from 'lucide-react';
-import { api } from '../../services/api';
+import { api, getFullImageUrl } from '../../services/api';
 import { BusinessProfile } from '../../types';
 import { useToast } from '../../context/ToastContext';
 
@@ -275,7 +275,7 @@ export const AdminProfile: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="w-20 h-20 rounded-2xl bg-slate-900 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0">
                 {profile.logoUrl ? (
-                  <img src={profile.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                  <img src={getFullImageUrl(profile.logoUrl)} alt="Logo" className="w-full h-full object-cover" />
                 ) : (
                   <Store className="w-8 h-8 text-slate-600" />
                 )}
@@ -308,7 +308,7 @@ export const AdminProfile: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="w-28 h-20 rounded-2xl bg-slate-900 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0">
                 {profile.coverImageUrl ? (
-                  <img src={profile.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+                  <img src={getFullImageUrl(profile.coverImageUrl)} alt="Cover" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-[10px] text-slate-600">No banner</span>
                 )}

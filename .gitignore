@@ -19,6 +19,7 @@ frontend/.env
 # Keep example env
 !.env.example
 !backend/.env.example
+!frontend/.env.example
 
 # Logs
 npm-debug.log*

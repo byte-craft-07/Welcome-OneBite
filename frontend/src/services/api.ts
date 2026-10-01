@@ -7,7 +7,23 @@ import {
   User,
 } from '../types';
 
-const API_BASE = '/api';
+const rawApiBase = (import.meta as any).env?.VITE_API_BASE_URL;
+export const API_BASE = rawApiBase
+  ? rawApiBase.endsWith('/api')
+    ? rawApiBase
+    : `${rawApiBase.replace(/\/$/, '')}/api`
+  : '/api';
+
+export const getFullImageUrl = (url?: string): string => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  const rawBase = (import.meta as any).env?.VITE_BACKEND_URL || (import.meta as any).env?.VITE_API_BASE_URL;
+  if (!rawBase) return url;
+  const backendBase = rawBase.replace(/\/api\/?$/, '').replace(/\/$/, '');
+  return url.startsWith('/') ? `${backendBase}${url}` : `${backendBase}/${url}`;
+};
 
 export const getAuthToken = (): string | null => {
   return localStorage.getItem('hub_auth_token');
