@@ -106,9 +106,23 @@ export const AdminProfile: React.FC = () => {
     try {
       // Ensure slug is clean lowercase
       const cleanSlug = (profile.slug || '').toLowerCase().trim().replace(/[^a-z0-9-]/g, '-');
+
+      // Sanitize phone & whatsapp
+      let cleanPhone = (profile.phone || '').trim();
+      if (/^91\+/i.test(cleanPhone)) {
+        cleanPhone = '+91 ' + cleanPhone.replace(/^91\+\s*/i, '');
+      }
+
+      let cleanWhatsApp = (profile.whatsapp || '').trim();
+      if (/^91\+/i.test(cleanWhatsApp)) {
+        cleanWhatsApp = '+91 ' + cleanWhatsApp.replace(/^91\+\s*/i, '');
+      }
+
       const payload = {
         ...profile,
         slug: cleanSlug,
+        phone: cleanPhone,
+        whatsapp: cleanWhatsApp,
       };
       const res = await api.updateBusiness(payload);
       setProfile(res.business);

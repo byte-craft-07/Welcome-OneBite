@@ -21,20 +21,43 @@ export const getAdminLinks = async (req: AuthRequest, res: Response): Promise<vo
 };
 
 const normalizeUrl = (rawUrl?: string, type?: string): string => {
-  const url = (rawUrl || '').trim();
+  let url = (rawUrl || '').trim();
   if (!url) return '';
+
+  if (type === 'phone') {
+    url = url.replace(/^(tel:)+/i, '').trim();
+    if (/^91\+/i.test(url)) {
+      url = '+' + url.replace(/^91\+/i, '91');
+    }
+    const digits = url.replace(/[^0-9]/g, '');
+    if (!digits) return '';
+    if (digits.length === 10) return `tel:+91${digits}`;
+    if (digits.length === 12 && digits.startsWith('91')) return `tel:+${digits}`;
+    if (url.startsWith('+')) return `tel:+${digits}`;
+    return `tel:${digits}`;
+  }
+
+  if (type === 'whatsapp') {
+    if (
+      url.startsWith('https://wa.me/') ||
+      url.startsWith('http://wa.me/') ||
+      url.startsWith('https://api.whatsapp.com/')
+    ) {
+      return url;
+    }
+    const digits = url.replace(/[^0-9]/g, '');
+    if (!digits) return '';
+    return digits.length === 10 ? `91${digits}` : digits;
+  }
+
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:') || url.startsWith('tel:') || url.startsWith('#')) {
     return url;
   }
-  if (type === 'phone') {
-    return url.replace(/\s+/g, '');
-  }
-  if (type === 'whatsapp') {
-    return url.replace(/[^0-9]/g, '');
-  }
+
   if (type === 'email') {
     return `mailto:${url}`;
   }
+
   return `https://${url}`;
 };
 

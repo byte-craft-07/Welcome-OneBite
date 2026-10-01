@@ -24,26 +24,74 @@ import { IconRenderer } from '../components/IconRenderer';
 import { AdminQuickAccessModal } from '../components/AdminQuickAccessModal';
 import { useToast } from '../context/ToastContext';
 
-// Helper to safely format link hrefs with proper protocol and handling
+// Helpers to safely format link hrefs with proper protocol and handling
+const formatWhatsAppHref = (rawPhoneOrUrl?: string, defaultMsg?: string, fallbackPhone?: string): string => {
+  const input = (rawPhoneOrUrl || '').trim();
+
+  // If already a complete wa.me or api.whatsapp.com URL, return as-is
+  if (
+    input.startsWith('https://wa.me/') ||
+    input.startsWith('http://wa.me/') ||
+    input.startsWith('https://api.whatsapp.com/') ||
+    input.startsWith('http://api.whatsapp.com/')
+  ) {
+    return input;
+  }
+
+  const rawPhone = input || fallbackPhone || '';
+  if (!rawPhone) return '#';
+
+  let digits = rawPhone.replace(/[^0-9]/g, '');
+  if (!digits) return '#';
+
+  if (digits.length === 10) {
+    digits = `91${digits}`;
+  }
+
+  const msg = defaultMsg ? encodeURIComponent(defaultMsg.trim()) : '';
+  return msg ? `https://wa.me/${digits}?text=${msg}` : `https://wa.me/${digits}`;
+};
+
+const formatPhoneHref = (rawPhoneOrUrl?: string, fallbackPhone?: string): string => {
+  let raw = (rawPhoneOrUrl || fallbackPhone || '').trim();
+  if (!raw) return '#';
+
+  // Strip leading tel: schemes if any
+  raw = raw.replace(/^(tel:)+/i, '').trim();
+
+  // Handle accidental '91+ 7524086674' format
+  if (/^91\+/i.test(raw)) {
+    raw = '+' + raw.replace(/^91\+/i, '91');
+  }
+
+  const digits = raw.replace(/[^0-9]/g, '');
+  if (!digits) return '#';
+
+  let formattedNumber = digits;
+  if (digits.length === 10) {
+    formattedNumber = `+91${digits}`;
+  } else if (digits.length === 12 && digits.startsWith('91')) {
+    formattedNumber = `+${digits}`;
+  } else if (raw.startsWith('+')) {
+    formattedNumber = `+${digits}`;
+  }
+
+  return `tel:${formattedNumber}`;
+};
+
 const formatLinkHref = (rawUrl?: string, type?: string, business?: any): string => {
   const url = (rawUrl || '').trim();
 
   if (type === 'whatsapp') {
-    const rawNumber = url || business?.whatsapp || '';
-    const cleanNumber = rawNumber.replace(/[^0-9]/g, '');
-    if (!cleanNumber) return '#';
-    const phoneWithCode = cleanNumber.length === 10 ? `91${cleanNumber}` : cleanNumber;
-    const msg = encodeURIComponent(business?.whatsappDefaultMessage || 'Hello! I would like to order.');
-    return `https://wa.me/${phoneWithCode}?text=${msg}`;
+    return formatWhatsAppHref(url, business?.whatsappDefaultMessage, business?.whatsapp);
   }
 
   if (type === 'phone') {
-    const phone = url || business?.phone || '';
-    return phone ? `tel:${phone.replace(/\s+/g, '')}` : '#';
+    return formatPhoneHref(url, business?.phone);
   }
 
   if (type === 'email') {
-    const email = url || business?.email || '';
+    const email = (url || business?.email || '').trim();
     if (!email) return '#';
     return email.startsWith('mailto:') ? email : `mailto:${email}`;
   }
@@ -337,7 +385,7 @@ export const PublicBusinessPage: React.FC = () => {
           <div className="w-full grid grid-cols-4 gap-2 mb-6">
             {business.phone && (
               <a
-                href={`tel:${business.phone.replace(/\s+/g, '')}`}
+                href={formatPhoneHref(business.phone)}
                 className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-stone-800/90 shadow-sm border border-stone-200/60 dark:border-stone-700/60 hover:shadow-md transition-all active:scale-95 group"
               >
                 <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
@@ -349,7 +397,7 @@ export const PublicBusinessPage: React.FC = () => {
 
             {business.whatsapp && (
               <a
-                href={business.directWhatsAppUrl || `https://wa.me/${business.whatsapp.replace(/[^0-9]/g, '')}`}
+                href={business.directWhatsAppUrl || formatWhatsAppHref(business.whatsapp, business.whatsappDefaultMessage)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-stone-800/90 shadow-sm border border-stone-200/60 dark:border-stone-700/60 hover:shadow-md transition-all active:scale-95 group"

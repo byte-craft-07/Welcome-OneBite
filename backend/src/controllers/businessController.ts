@@ -41,16 +41,37 @@ export const getPublicBusiness = async (req: Request, res: Response): Promise<vo
 
       if (link.type === 'whatsapp') {
         const rawPhone = finalUrl || business?.whatsapp || '';
-        const cleanNumber = rawPhone.replace(/[^0-9]/g, '');
-        if (cleanNumber) {
-          const phoneWithCode = cleanNumber.length === 10 ? `91${cleanNumber}` : cleanNumber;
-          const msg = encodeURIComponent(business?.whatsappDefaultMessage || 'Hello! I would like to order.');
-          finalUrl = `https://wa.me/${phoneWithCode}?text=${msg}`;
+        if (
+          rawPhone.startsWith('https://wa.me/') ||
+          rawPhone.startsWith('http://wa.me/') ||
+          rawPhone.startsWith('https://api.whatsapp.com/')
+        ) {
+          finalUrl = rawPhone;
+        } else {
+          const cleanNumber = rawPhone.replace(/[^0-9]/g, '');
+          if (cleanNumber) {
+            const phoneWithCode = cleanNumber.length === 10 ? `91${cleanNumber}` : cleanNumber;
+            const msg = encodeURIComponent(business?.whatsappDefaultMessage || 'Hello! I would like to order.');
+            finalUrl = `https://wa.me/${phoneWithCode}?text=${msg}`;
+          }
         }
       } else if (link.type === 'phone') {
-        const rawPhone = finalUrl || business?.phone || '';
-        if (rawPhone) {
-          finalUrl = `tel:${rawPhone.replace(/\s+/g, '')}`;
+        let rawPhone = (finalUrl || business?.phone || '').trim();
+        rawPhone = rawPhone.replace(/^(tel:)+/i, '').trim();
+        if (/^91\+/i.test(rawPhone)) {
+          rawPhone = '+' + rawPhone.replace(/^91\+/i, '91');
+        }
+        const digits = rawPhone.replace(/[^0-9]/g, '');
+        if (digits) {
+          const formatted =
+            digits.length === 10
+              ? `+91${digits}`
+              : digits.length === 12 && digits.startsWith('91')
+              ? `+${digits}`
+              : rawPhone.startsWith('+')
+              ? `+${digits}`
+              : digits;
+          finalUrl = `tel:${formatted}`;
         }
       } else if (link.type === 'email') {
         const email = finalUrl || business?.email || '';
@@ -101,7 +122,10 @@ export const getPublicBusiness = async (req: Request, res: Response): Promise<vo
     // Build WhatsApp direct link
     let directWhatsAppUrl = '';
     if (business.whatsapp) {
-      const cleanNumber = business.whatsapp.replace(/[^0-9]/g, '');
+      let cleanNumber = business.whatsapp.replace(/[^0-9]/g, '');
+      if (cleanNumber.length === 10) {
+        cleanNumber = `91${cleanNumber}`;
+      }
       const msg = encodeURIComponent(business.whatsappDefaultMessage || 'Hello! I found your profile online.');
       directWhatsAppUrl = `https://wa.me/${cleanNumber}?text=${msg}`;
     }
@@ -218,7 +242,15 @@ export const updateBusiness = async (req: AuthRequest, res: Response): Promise<v
       }
     }
 
-    Object.assign(business, parsed.data);
+    const dataToSave = { ...parsed.data };
+    if (dataToSave.phone && /^91\+/i.test(dataToSave.phone)) {
+      dataToSave.phone = '+91 ' + dataToSave.phone.replace(/^91\+\s*/i, '');
+    }
+    if (dataToSave.whatsapp && /^91\+/i.test(dataToSave.whatsapp)) {
+      dataToSave.whatsapp = '+91 ' + dataToSave.whatsapp.replace(/^91\+\s*/i, '');
+    }
+
+    Object.assign(business, dataToSave);
     await business.save();
 
     // Log audit

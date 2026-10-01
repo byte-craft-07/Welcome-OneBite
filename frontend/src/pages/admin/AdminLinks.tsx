@@ -180,7 +180,27 @@ export const AdminLinks: React.FC = () => {
     }
 
     let formattedUrl = (formData.url || '').trim();
-    if (
+    if (formData.type === 'phone') {
+      formattedUrl = formattedUrl.replace(/^(tel:)+/i, '').trim();
+      if (/^91\+/i.test(formattedUrl)) {
+        formattedUrl = '+' + formattedUrl.replace(/^91\+/i, '91');
+      }
+      const digits = formattedUrl.replace(/[^0-9]/g, '');
+      if (digits.length === 10) formattedUrl = `+91${digits}`;
+      else if (digits.length === 12 && digits.startsWith('91')) formattedUrl = `+${digits}`;
+      else if (formattedUrl.startsWith('+')) formattedUrl = `+${digits}`;
+      else if (digits) formattedUrl = digits;
+    } else if (formData.type === 'whatsapp') {
+      if (
+        !formattedUrl.startsWith('https://wa.me/') &&
+        !formattedUrl.startsWith('http://wa.me/') &&
+        !formattedUrl.startsWith('https://api.whatsapp.com/')
+      ) {
+        let digits = formattedUrl.replace(/[^0-9]/g, '');
+        if (digits.length === 10) digits = `91${digits}`;
+        formattedUrl = digits;
+      }
+    } else if (
       formattedUrl &&
       !formattedUrl.startsWith('http://') &&
       !formattedUrl.startsWith('https://') &&
@@ -188,12 +208,8 @@ export const AdminLinks: React.FC = () => {
       !formattedUrl.startsWith('tel:') &&
       !formattedUrl.startsWith('#')
     ) {
-      if (formData.type === 'phone') {
-        formattedUrl = formattedUrl.replace(/\s+/g, '');
-      } else if (formData.type === 'email') {
+      if (formData.type === 'email') {
         formattedUrl = `mailto:${formattedUrl}`;
-      } else if (formData.type === 'whatsapp') {
-        formattedUrl = formattedUrl.replace(/[^0-9]/g, '');
       } else {
         formattedUrl = `https://${formattedUrl}`;
       }
