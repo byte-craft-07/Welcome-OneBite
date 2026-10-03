@@ -18,8 +18,8 @@ import { useToast } from '../../context/ToastContext';
 export const AdminAppearance: React.FC = () => {
   const [appearance, setAppearance] = useState<BusinessAppearance>({
     theme: 'bakery',
-    primaryColor: '#ea580c',
-    secondaryColor: '#9a3412',
+    primaryColor: '#5c3826',
+    secondaryColor: '#3e2415',
     backgroundColor: '#fffbeb',
     cardBackgroundColor: '#ffffff',
     textColor: '#1c1917',
@@ -72,12 +72,12 @@ export const AdminAppearance: React.FC = () => {
   }> = [
     {
       id: 'bakery',
-      name: 'Bakery Warm',
-      primary: '#ea580c',
-      secondary: '#9a3412',
+      name: 'Artisan Chocolate & Bakery',
+      primary: '#5c3826',
+      secondary: '#3e2415',
       bg: '#fffbeb',
       text: '#1c1917',
-      desc: 'Artisanal golden honey & warm terracotta',
+      desc: 'Rich artisan chocolate & warm cream',
     },
     {
       id: 'classic',

@@ -110,8 +110,8 @@ export const seedDatabase = async (): Promise<void> => {
       isFeatured: true,
       openInNewTab: true,
       sortOrder: 0,
-      customBadge: 'Fresh Daily',
-      highlightColor: '#f97316',
+      customBadge: '',
+      highlightColor: '#5c3826',
       clickCount: 0,
     },
     {
@@ -207,8 +207,8 @@ export const seedDatabase = async (): Promise<void> => {
   await BusinessAppearance.create({
     businessId: business._id,
     theme: 'bakery',
-    primaryColor: '#ea580c',
-    secondaryColor: '#9a3412',
+    primaryColor: '#5c3826',
+    secondaryColor: '#3e2415',
     backgroundColor: '#fffbeb',
     cardBackgroundColor: '#ffffff',
     textColor: '#1c1917',

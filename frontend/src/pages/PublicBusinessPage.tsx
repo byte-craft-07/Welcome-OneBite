@@ -207,7 +207,7 @@ export const PublicBusinessPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-12 h-12 border-4 border-[#5c3826] border-t-transparent rounded-full animate-spin" />
           <p className="text-sm font-medium text-stone-600">Loading business profile...</p>
         </div>
       </div>
@@ -218,7 +218,7 @@ export const PublicBusinessPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4 font-sans">
         <div className="max-w-md w-full bg-white rounded-3xl p-8 text-center shadow-xl border border-stone-200">
-          <div className="w-16 h-16 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-4 font-bold text-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-amber-100 text-[#5c3826] flex items-center justify-center mx-auto mb-4 font-bold text-2xl">
             !
           </div>
           <h2 className="text-2xl font-bold text-stone-800 mb-2">Profile Not Available</h2>
@@ -226,7 +226,7 @@ export const PublicBusinessPage: React.FC = () => {
           <div className="flex flex-col gap-2">
             <button
               onClick={() => window.location.reload()}
-              className="py-3 px-5 rounded-2xl bg-orange-600 text-white font-semibold text-sm hover:bg-orange-700 transition-all shadow-md shadow-orange-600/20"
+              className="py-3 px-5 rounded-2xl bg-[#5c3826] text-white font-semibold text-sm hover:opacity-90 transition-all shadow-md shadow-[#5c3826]/20"
             >
               Retry
             </button>
@@ -248,7 +248,7 @@ export const PublicBusinessPage: React.FC = () => {
 
   // Derive theme colors and styles
   const isDarkTheme = appearance.theme === 'dark';
-  const primaryColor = appearance.primaryColor || '#f97316';
+  const primaryColor = appearance.primaryColor || '#5c3826';
   const bgColor = appearance.backgroundColor || (isDarkTheme ? '#0f172a' : '#fffbeb');
   const textColor = appearance.textColor || (isDarkTheme ? '#f8fafc' : '#1c1917');
   const cardBg = appearance.cardBackgroundColor || (isDarkTheme ? '#1e293b' : '#ffffff');
@@ -288,8 +288,8 @@ export const PublicBusinessPage: React.FC = () => {
           {/* Business Logo */}
           <div className="relative mb-3 group">
             <div
-              className="w-24 h-24 md:w-28 md:h-28 rounded-full p-1 bg-white shadow-xl ring-4 ring-orange-500/20 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105"
-              style={{ backgroundColor: cardBg }}
+              className="w-24 h-24 md:w-28 md:h-28 rounded-full p-1 bg-white shadow-xl flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105"
+              style={{ backgroundColor: cardBg, boxShadow: `0 0 0 4px ${primaryColor}33` }}
             >
               {business.logoUrl ? (
                 <img
@@ -392,7 +392,10 @@ export const PublicBusinessPage: React.FC = () => {
                 href={formatPhoneHref(business.phone)}
                 className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-stone-800/90 shadow-sm border border-stone-200/60 dark:border-stone-700/60 hover:shadow-md transition-all active:scale-95 group"
               >
-                <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center mb-1 group-hover:scale-110 transition-transform"
+                  style={{ backgroundColor: `${primaryColor}18`, color: primaryColor }}
+                >
                   <Phone className="w-4 h-4" />
                 </div>
                 <span className="text-[11px] font-semibold text-stone-700 dark:text-stone-300">Call</span>
@@ -460,7 +463,7 @@ export const PublicBusinessPage: React.FC = () => {
                   onClick={(e) => handleLinkClick(link, e)}
                   className={`w-full group block relative overflow-hidden transition-all duration-300 active:scale-[0.98] ${buttonRadius} ${
                     isFeatured
-                      ? 'shadow-lg shadow-orange-500/20 hover:shadow-orange-500/35 border-2'
+                      ? 'shadow-lg shadow-black/10 hover:shadow-black/20 border-2'
                       : 'shadow-sm hover:shadow-md border'
                   }`}
                   style={{
@@ -490,11 +493,12 @@ export const PublicBusinessPage: React.FC = () => {
                         </div>
                       ) : (
                         <div
-                          className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 group-hover:scale-110 ${
+                          className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-300 group-hover:scale-110"
+                          style={
                             isFeatured
-                              ? 'bg-white/20 text-white'
-                              : 'bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400'
-                          }`}
+                              ? { backgroundColor: 'rgba(255, 255, 255, 0.2)', color: '#ffffff' }
+                              : { backgroundColor: `${primaryColor}18`, color: primaryColor }
+                          }
                         >
                           <IconRenderer name={link.icon || 'Globe'} className="w-5 h-5" />
                         </div>
@@ -508,11 +512,11 @@ export const PublicBusinessPage: React.FC = () => {
                           </span>
                           {link.customBadge && (
                             <span
-                              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${
-                                isFeatured
-                                  ? 'bg-white text-orange-600'
-                                  : 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
-                              }`}
+                              className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
+                              style={{
+                                backgroundColor: isFeatured ? '#ffffff' : `${primaryColor}18`,
+                                color: isFeatured ? (link.highlightColor || primaryColor) : primaryColor,
+                              }}
                             >
                               {link.customBadge}
                             </span>
@@ -556,7 +560,7 @@ export const PublicBusinessPage: React.FC = () => {
             className="w-full bg-white dark:bg-stone-800/90 rounded-3xl p-5 mb-6 shadow-sm border border-stone-200/80 dark:border-stone-700/80"
           >
             <h3 className="text-base font-bold mb-2 flex items-center gap-2 text-stone-900 dark:text-stone-100">
-              <Sparkles className="w-4 h-4 text-orange-500" />
+              <Sparkles className="w-4 h-4" style={{ color: primaryColor }} />
               <span>{business.aboutSection.title || 'About Us'}</span>
             </h3>
             <p className="text-xs md:text-sm text-stone-600 dark:text-stone-300 leading-relaxed whitespace-pre-line">
@@ -576,7 +580,7 @@ export const PublicBusinessPage: React.FC = () => {
         {business.address?.fullAddress && (
           <div className="w-full bg-white dark:bg-stone-800/90 rounded-3xl p-5 mb-6 shadow-sm border border-stone-200/80 dark:border-stone-700/80">
             <h3 className="text-sm font-bold mb-2 flex items-center gap-2 text-stone-900 dark:text-stone-100">
-              <MapPin className="w-4 h-4 text-orange-500" />
+              <MapPin className="w-4 h-4" style={{ color: primaryColor }} />
               <span>Our Location</span>
             </h3>
             <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed mb-3">
@@ -587,7 +591,8 @@ export const PublicBusinessPage: React.FC = () => {
                 href={business.mapUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-600 hover:text-orange-700 hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold hover:underline"
+                style={{ color: primaryColor }}
               >
                 <span>View on Google Maps</span>
                 <ExternalLink className="w-3 h-3" />
@@ -658,7 +663,10 @@ export const PublicBusinessPage: React.FC = () => {
             className="group px-4 py-2 rounded-full bg-stone-900/80 hover:bg-stone-950 text-stone-300 hover:text-white border border-stone-700/50 shadow-md text-xs font-semibold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md"
             title="Business Owner Admin Panel"
           >
-            <div className="w-5 h-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-colors">
+            <div
+              className="w-5 h-5 rounded-full flex items-center justify-center transition-colors"
+              style={{ backgroundColor: `${primaryColor}40`, color: '#ffffff' }}
+            >
               <Lock className="w-3 h-3" />
             </div>
             <span>Admin Access</span>
@@ -693,7 +701,10 @@ export const PublicBusinessPage: React.FC = () => {
               </div>
             ) : (
               <div className="w-52 h-52 flex items-center justify-center mx-auto mb-4 bg-stone-50 rounded-2xl">
-                <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                <div
+                  className="w-8 h-8 border-3 border-t-transparent rounded-full animate-spin"
+                  style={{ borderColor: primaryColor, borderTopColor: 'transparent' }}
+                />
               </div>
             )}
 
@@ -703,7 +714,8 @@ export const PublicBusinessPage: React.FC = () => {
 
             <button
               onClick={handleShare}
-              className="w-full py-2.5 px-4 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-orange-600/20 transition-all"
+              className="w-full py-2.5 px-4 text-white rounded-xl text-xs font-semibold shadow-md transition-all hover:opacity-95"
+              style={{ backgroundColor: primaryColor }}
             >
               Share Link
             </button>
@@ -720,7 +732,7 @@ export const PublicBusinessPage: React.FC = () => {
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-orange-500" />
+                <Clock className="w-4 h-4" style={{ color: primaryColor }} />
                 <h4 className="text-base font-bold text-stone-900 dark:text-stone-100">Business Hours</h4>
               </div>
               <button
@@ -737,9 +749,11 @@ export const PublicBusinessPage: React.FC = () => {
                 return (
                   <div
                     key={d.day}
-                    className={`py-2.5 flex items-center justify-between ${
-                      isCurrent ? 'font-bold text-orange-600 dark:text-orange-400' : 'text-stone-600 dark:text-stone-300'
-                    }`}
+                    className="py-2.5 flex items-center justify-between"
+                    style={{
+                      fontWeight: isCurrent ? 700 : 400,
+                      color: isCurrent ? primaryColor : undefined,
+                    }}
                   >
                     <span className="capitalize">{d.day}</span>
                     <span>
