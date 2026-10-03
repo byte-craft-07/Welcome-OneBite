@@ -3,6 +3,7 @@ import { BusinessHours } from '../models/BusinessHours';
 import { AuditLog } from '../models/AuditLog';
 import { hoursUpdateSchema } from '../validators';
 import { AuthRequest } from '../middleware/auth';
+import { clearPublicBusinessCache } from './businessController';
 
 export const getHours = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -75,6 +76,7 @@ export const updateHours = async (req: AuthRequest, res: Response): Promise<void
       details: { timezone: hours.timezone },
     });
 
+    clearPublicBusinessCache();
     res.json({ success: true, message: 'Business hours updated successfully', hours });
   } catch (error: any) {
     console.error('updateHours error:', error);

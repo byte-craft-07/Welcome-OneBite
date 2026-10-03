@@ -3,6 +3,7 @@ import { BusinessLink } from '../models/BusinessLink';
 import { AuditLog } from '../models/AuditLog';
 import { linkCreateSchema } from '../validators';
 import { AuthRequest } from '../middleware/auth';
+import { clearPublicBusinessCache } from './businessController';
 
 export const getAdminLinks = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -101,6 +102,7 @@ export const createLink = async (req: AuthRequest, res: Response): Promise<void>
       details: { title: link.title, type: link.type },
     });
 
+    clearPublicBusinessCache();
     res.status(201).json({ success: true, message: 'Link created successfully', link });
   } catch (error: any) {
     console.error('createLink error:', error);
@@ -145,6 +147,7 @@ export const updateLink = async (req: AuthRequest, res: Response): Promise<void>
       details: { title: link.title },
     });
 
+    clearPublicBusinessCache();
     res.json({ success: true, message: 'Link updated successfully', link });
   } catch (error: any) {
     console.error('updateLink error:', error);
@@ -171,6 +174,7 @@ export const deleteLink = async (req: AuthRequest, res: Response): Promise<void>
       details: { title: link.title },
     });
 
+    clearPublicBusinessCache();
     res.json({ success: true, message: 'Link deleted successfully' });
   } catch (error: any) {
     console.error('deleteLink error:', error);
@@ -207,6 +211,7 @@ export const duplicateLink = async (req: AuthRequest, res: Response): Promise<vo
       highlightColor: original.highlightColor,
     });
 
+    clearPublicBusinessCache();
     res.status(201).json({ success: true, message: 'Link duplicated successfully', link: duplicated });
   } catch (error: any) {
     console.error('duplicateLink error:', error);
@@ -227,6 +232,7 @@ export const toggleLinkActive = async (req: AuthRequest, res: Response): Promise
     link.isActive = !link.isActive;
     await link.save();
 
+    clearPublicBusinessCache();
     res.json({
       success: true,
       message: `Link ${link.isActive ? 'activated' : 'deactivated'}`,
@@ -256,6 +262,7 @@ export const reorderLinks = async (req: AuthRequest, res: Response): Promise<voi
 
     await BusinessLink.bulkWrite(bulkOps);
 
+    clearPublicBusinessCache();
     res.json({ success: true, message: 'Links reordered successfully' });
   } catch (error: any) {
     console.error('reorderLinks error:', error);

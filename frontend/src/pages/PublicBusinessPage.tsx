@@ -133,8 +133,8 @@ export const PublicBusinessPage: React.FC = () => {
         const result = await api.getPublicBusiness(activeSlug);
         if (isMounted) {
           setData(result);
-          // Track page view asynchronously
-          api.trackPageView(activeSlug, document.referrer);
+          // Track page view asynchronously in background without delaying render
+          setTimeout(() => api.trackPageView(activeSlug, document.referrer), 200);
           // Set dynamic document title
           if (result.business.name) {
             document.title = result.business.seo?.title || `${result.business.name} | Official Business Profile`;
@@ -272,6 +272,8 @@ export const PublicBusinessPage: React.FC = () => {
           <img
             src={getFullImageUrl(business.coverImageUrl)}
             alt={`${business.name} cover`}
+            loading="eager"
+            decoding="async"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
@@ -293,6 +295,8 @@ export const PublicBusinessPage: React.FC = () => {
                 <img
                   src={getFullImageUrl(business.logoUrl)}
                   alt={business.name}
+                  loading="eager"
+                  decoding="async"
                   className="w-full h-full object-cover rounded-full"
                 />
               ) : (
@@ -479,6 +483,8 @@ export const PublicBusinessPage: React.FC = () => {
                           <img
                             src={getFullImageUrl(link.imageUrl)}
                             alt={link.title}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover"
                           />
                         </div>

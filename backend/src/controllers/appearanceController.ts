@@ -3,6 +3,7 @@ import { BusinessAppearance } from '../models/BusinessAppearance';
 import { AuditLog } from '../models/AuditLog';
 import { appearanceUpdateSchema } from '../validators';
 import { AuthRequest } from '../middleware/auth';
+import { clearPublicBusinessCache } from './businessController';
 
 export const getAppearance = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -81,6 +82,7 @@ export const updateAppearance = async (req: AuthRequest, res: Response): Promise
       details: { theme: appearance.theme, primaryColor: appearance.primaryColor },
     });
 
+    clearPublicBusinessCache();
     res.json({ success: true, message: 'Appearance updated successfully', appearance });
   } catch (error: any) {
     console.error('updateAppearance error:', error);

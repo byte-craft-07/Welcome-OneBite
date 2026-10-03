@@ -8,20 +8,38 @@ import { calculateOpenStatus } from '../utils/businessHoursHelper';
 import { businessUpdateSchema } from '../validators';
 import { AuthRequest } from '../middleware/auth';
 
+// High-performance in-memory cache for public business pages (sub-millisecond responses)
+const publicProfileCache = new Map<string, { data: any; expiry: number }>();
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+export const clearPublicBusinessCache = (): void => {
+  publicProfileCache.clear();
+};
+
 export const getPublicBusiness = async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
+    const cacheKey = (slug || 'default').toLowerCase().trim();
+
+    // Serve from high-speed in-memory cache if available
+    const cached = publicProfileCache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      res.setHeader('Cache-Control', 'public, max-age=15, stale-while-revalidate=60');
+      res.json(cached.data);
+      return;
+    }
+
     let query: any = { isPublished: true };
 
     if (slug && slug !== 'default' && slug !== 'primary') {
       query.slug = slug.toLowerCase().trim();
     }
 
-    let business = await Business.findOne(query);
+    let business: any = await Business.findOne(query).lean();
 
     // If specific slug not found or default requested, fallback to first available
     if (!business) {
-      business = await Business.findOne({ isPublished: true });
+      business = await Business.findOne({ isPublished: true }).lean();
     }
 
     if (!business) {
@@ -29,11 +47,17 @@ export const getPublicBusiness = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    // Get active links sorted by sortOrder
-    const links = await BusinessLink.find({
-      businessId: business._id,
-      isActive: true,
-    }).sort({ sortOrder: 1, createdAt: 1 });
+    // Run links, hours, and appearance in parallel with .lean() for maximum database performance
+    const [links, hours, appearanceRecord]: [any[], any, any] = await Promise.all([
+      BusinessLink.find({
+        businessId: business._id,
+        isActive: true,
+      })
+        .sort({ sortOrder: 1, createdAt: 1 })
+        .lean(),
+      BusinessHours.findOne({ businessId: business._id }).lean(),
+      BusinessAppearance.findOne({ businessId: business._id }).lean(),
+    ]);
 
     // Format links: ensure proper protocol and handling for all types
     const processedLinks = links.map((link) => {
@@ -110,14 +134,29 @@ export const getPublicBusiness = async (req: Request, res: Response): Promise<vo
     });
 
     // Get hours & calculate open status
-    const hours = await BusinessHours.findOne({ businessId: business._id });
     const openStatus = hours ? calculateOpenStatus(hours.days, hours.timezone || business.timezone) : null;
 
     // Get appearance
-    let appearance = await BusinessAppearance.findOne({ businessId: business._id });
-    if (!appearance) {
-      appearance = new BusinessAppearance({ businessId: business._id });
-    }
+    const appearance = appearanceRecord || {
+      theme: 'bakery',
+      primaryColor: '#f97316',
+      secondaryColor: '#c2410c',
+      backgroundColor: '#fffbeb',
+      cardBackgroundColor: '#ffffff',
+      textColor: '#1c1917',
+      cardStyle: 'rounded',
+      buttonStyle: 'rounded',
+      borderRadius: 'rounded-2xl',
+      fontFamily: 'sans',
+      profileLayout: 'centered',
+      backgroundPattern: 'none',
+      showVerifiedBadge: true,
+      showShareButton: true,
+      showQrButton: true,
+      showHoursCard: true,
+      showAboutCard: true,
+      showContactCard: true,
+    };
 
     // Build WhatsApp direct link
     let directWhatsAppUrl = '';
@@ -130,7 +169,7 @@ export const getPublicBusiness = async (req: Request, res: Response): Promise<vo
       directWhatsAppUrl = `https://wa.me/${cleanNumber}?text=${msg}`;
     }
 
-    res.json({
+    const responsePayload = {
       success: true,
       business: {
         id: business._id,
@@ -170,7 +209,13 @@ export const getPublicBusiness = async (req: Request, res: Response): Promise<vo
         : null,
       openStatus,
       appearance,
-    });
+    };
+
+    // Cache the processed payload for 60 seconds
+    publicProfileCache.set(cacheKey, { data: responsePayload, expiry: Date.now() + CACHE_TTL_MS });
+
+    res.setHeader('Cache-Control', 'public, max-age=15, stale-while-revalidate=60');
+    res.json(responsePayload);
   } catch (error: any) {
     console.error('getPublicBusiness error:', error);
     res.status(500).json({ success: false, message: 'Failed to load business profile' });
@@ -263,6 +308,7 @@ export const updateBusiness = async (req: AuthRequest, res: Response): Promise<v
       details: { name: business.name, slug: business.slug },
     });
 
+    clearPublicBusinessCache();
     res.json({ success: true, message: 'Business updated successfully', business });
   } catch (error: any) {
     console.error('updateBusiness error:', error);
@@ -322,6 +368,7 @@ export const createBusiness = async (req: AuthRequest, res: Response): Promise<v
       await req.user.save();
     }
 
+    clearPublicBusinessCache();
     res.status(201).json({ success: true, message: 'Business created successfully', business });
   } catch (error: any) {
     console.error('createBusiness error:', error);

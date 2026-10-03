@@ -28,47 +28,30 @@ export const getFullImageUrl = (url?: string): string => {
   return url.startsWith('/') ? `${backendBase}${url}` : `${backendBase}/${url}`;
 };
 
-// 2 months in seconds: 60 days * 24 hours * 3600 seconds = 5,184,000 seconds
-export const TWO_MONTHS_SECONDS = 60 * 24 * 60 * 60;
+// Clear any legacy cookie once on load
+if (typeof document !== 'undefined') {
+  document.cookie = 'hub_auth_token=; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;';
+}
 
 export const getAuthToken = (): string | null => {
-  try {
-    const localToken = localStorage.getItem('hub_auth_token');
-    if (localToken) return localToken;
-  } catch (e) {}
-
-  // Fallback to 2-month persistent cookie if localStorage was cleared
-  if (typeof document !== 'undefined') {
-    const match = document.cookie.match(/(?:^|;\s*)hub_auth_token=([^;]+)/);
-    if (match) {
-      const cookieToken = decodeURIComponent(match[1]);
-      try {
-        localStorage.setItem('hub_auth_token', cookieToken);
-      } catch (e) {}
-      return cookieToken;
-    }
-  }
-  return null;
+  return localStorage.getItem('hub_auth_token');
 };
 
 export const setAuthToken = (token: string): void => {
-  try {
-    localStorage.setItem('hub_auth_token', token);
-  } catch (e) {}
-
-  // Set persistent cookie for 2 months (60 days)
-  if (typeof document !== 'undefined') {
-    document.cookie = `hub_auth_token=${encodeURIComponent(token)}; max-age=${TWO_MONTHS_SECONDS}; path=/; SameSite=Lax`;
-  }
+  localStorage.setItem('hub_auth_token', token);
 };
 
 export const removeAuthToken = (): void => {
-  try {
-    localStorage.removeItem('hub_auth_token');
-  } catch (e) {}
+  localStorage.removeItem('hub_auth_token');
+};
 
-  if (typeof document !== 'undefined') {
-    document.cookie = 'hub_auth_token=; max-age=0; path=/; SameSite=Lax';
+// Fast in-memory cache for public business pages (eliminates redundant network calls)
+const publicCache: Record<string, { data: PublicBusinessData; timestamp: number }> = {};
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+export const invalidateClientPublicCache = (): void => {
+  for (const k in publicCache) {
+    delete publicCache[k];
   }
 };
 
@@ -115,12 +98,19 @@ const parseJsonResponse = async (res: Response): Promise<any> => {
 
 export const api = {
   // Public APIs
-  async getPublicBusiness(slug = 'onebite-bakery'): Promise<PublicBusinessData> {
+  async getPublicBusiness(slug = 'onebite-bakery', forceRefresh = false): Promise<PublicBusinessData> {
+    const cacheKey = slug.toLowerCase().trim();
+    const now = Date.now();
+    if (!forceRefresh && publicCache[cacheKey] && now - publicCache[cacheKey].timestamp < CACHE_TTL_MS) {
+      return publicCache[cacheKey].data;
+    }
+
     const res = await fetch(`${API_BASE}/public/business/${slug}`);
     const data = await parseJsonResponse(res);
     if (!res.ok) {
       throw new Error(data.message || `Failed to load business profile: ${res.statusText}`);
     }
+    publicCache[cacheKey] = { data, timestamp: now };
     return data;
   },
 
@@ -163,7 +153,6 @@ export const api = {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ email, password }),
     });
     const data = await parseJsonResponse(res);
@@ -178,7 +167,6 @@ export const api = {
     const res = await fetch(`${API_BASE}/auth/pin-login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ pin }),
     });
     const data = await parseJsonResponse(res);
@@ -189,22 +177,13 @@ export const api = {
     return data;
   },
 
-  async logout(): Promise<void> {
-    try {
-      await fetch(`${API_BASE}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-    } catch (e) {
-      // Non-blocking on network issues
-    }
+  logout(): void {
     removeAuthToken();
   },
 
   async getMe(): Promise<{ user: User }> {
     const res = await fetch(`${API_BASE}/auth/me`, {
       headers: authHeaders(),
-      credentials: 'include',
     });
     const data = await parseJsonResponse(res);
     if (!res.ok || !data.success) {
@@ -217,7 +196,6 @@ export const api = {
     const res = await fetch(`${API_BASE}/auth/pin`, {
       method: 'PUT',
       headers: authHeaders(),
-      credentials: 'include',
       body: JSON.stringify({ newPin }),
     });
     const data = await parseJsonResponse(res);
@@ -252,6 +230,7 @@ export const api = {
     });
     const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to update business');
+    invalidateClientPublicCache();
     return data;
   },
 
@@ -263,6 +242,7 @@ export const api = {
     });
     const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to create business');
+    invalidateClientPublicCache();
     return data;
   },
 
@@ -283,6 +263,7 @@ export const api = {
     });
     const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to create link');
+    invalidateClientPublicCache();
     return data;
   },
 
@@ -294,6 +275,7 @@ export const api = {
     });
     const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to update link');
+    invalidateClientPublicCache();
     return data;
   },
 
@@ -304,6 +286,7 @@ export const api = {
     });
     const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to delete link');
+    invalidateClientPublicCache();
   },
 
   async duplicateLink(id: string): Promise<{ link: BusinessLink }> {
@@ -313,6 +296,7 @@ export const api = {
     });
     const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to duplicate link');
+    invalidateClientPublicCache();
     return data;
   },
 
@@ -323,6 +307,7 @@ export const api = {
     });
     const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to toggle link');
+    invalidateClientPublicCache();
     return data;
   },
 
@@ -334,6 +319,7 @@ export const api = {
     });
     const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to reorder links');
+    invalidateClientPublicCache();
   },
 
   // Hours APIs
@@ -353,6 +339,7 @@ export const api = {
     });
     const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to update hours');
+    invalidateClientPublicCache();
     return data;
   },
 
@@ -373,6 +360,7 @@ export const api = {
     });
     const data = await parseJsonResponse(res);
     if (!res.ok) throw new Error(data.message || 'Failed to update appearance');
+    invalidateClientPublicCache();
     return data;
   },
 
