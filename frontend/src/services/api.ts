@@ -7,6 +7,8 @@ import {
   User,
 } from '../types';
 
+import { fallbackProfileData } from '../data/fallbackProfile';
+
 export const DEFAULT_BACKEND_URL = 'https://welcome-onebite.onrender.com';
 
 const rawApiBase = (import.meta as any).env?.VITE_API_BASE_URL;
@@ -19,6 +21,10 @@ export const API_BASE = rawApiBase
 export const getFullImageUrl = (url?: string): string => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  // If image is in /uploads, serve relative path so Vercel CDN/Vite public cache serves it instantly
+  if (url.startsWith('/uploads/')) {
     return url;
   }
   const rawBase = (import.meta as any).env?.VITE_BACKEND_URL || (import.meta as any).env?.VITE_API_BASE_URL;
@@ -45,13 +51,45 @@ export const removeAuthToken = (): void => {
   localStorage.removeItem('hub_auth_token');
 };
 
-// Fast in-memory cache for public business pages (eliminates redundant network calls)
+// Persistent client cache with instant fallback for zero-wait first renders
 const publicCache: Record<string, { data: PublicBusinessData; timestamp: number }> = {};
 const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+export const getInitialPublicBusiness = (slug = 'onebite-bakery'): PublicBusinessData | null => {
+  const cacheKey = slug.toLowerCase().trim();
+  try {
+    const stored = localStorage.getItem(`hub_public_profile_${cacheKey}`);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.business) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+
+  // Pre-bundled instant fallback for default business
+  if (cacheKey === 'onebite-bakery' || cacheKey === 'default' || !cacheKey) {
+    return fallbackProfileData;
+  }
+
+  return null;
+};
 
 export const invalidateClientPublicCache = (): void => {
   for (const k in publicCache) {
     delete publicCache[k];
+  }
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('hub_public_profile_')) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (e) {
+    // Ignore storage issues
   }
 };
 
@@ -105,13 +143,29 @@ export const api = {
       return publicCache[cacheKey].data;
     }
 
-    const res = await fetch(`${API_BASE}/public/business/${slug}`);
-    const data = await parseJsonResponse(res);
-    if (!res.ok) {
-      throw new Error(data.message || `Failed to load business profile: ${res.statusText}`);
+    try {
+      const res = await fetch(`${API_BASE}/public/business/${slug}`);
+      const data = await parseJsonResponse(res);
+      if (!res.ok) {
+        throw new Error(data.message || `Failed to load business profile: ${res.statusText}`);
+      }
+      publicCache[cacheKey] = { data, timestamp: now };
+      try {
+        localStorage.setItem(`hub_public_profile_${cacheKey}`, JSON.stringify(data));
+      } catch (e) {
+        // Ignore storage errors
+      }
+      return data;
+    } catch (err: any) {
+      // If network fails (e.g., Render waking up), fallback to existing cache or default fallback
+      const cached = getInitialPublicBusiness(slug);
+      if (cached) {
+        console.warn(`[API] Network request failed for ${slug}, serving from persistent cache:`, err.message);
+        publicCache[cacheKey] = { data: cached, timestamp: now };
+        return cached;
+      }
+      throw err;
     }
-    publicCache[cacheKey] = { data, timestamp: now };
-    return data;
   },
 
   async trackPageView(slug: string, referrer = ''): Promise<void> {

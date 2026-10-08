@@ -24,7 +24,7 @@ export const getPublicBusiness = async (req: Request, res: Response): Promise<vo
     // Serve from high-speed in-memory cache if available
     const cached = publicProfileCache.get(cacheKey);
     if (cached && cached.expiry > Date.now()) {
-      res.setHeader('Cache-Control', 'public, max-age=15, stale-while-revalidate=60');
+      res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400');
       res.json(cached.data);
       return;
     }
@@ -214,7 +214,7 @@ export const getPublicBusiness = async (req: Request, res: Response): Promise<vo
     // Cache the processed payload for 60 seconds
     publicProfileCache.set(cacheKey, { data: responsePayload, expiry: Date.now() + CACHE_TTL_MS });
 
-    res.setHeader('Cache-Control', 'public, max-age=15, stale-while-revalidate=60');
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400');
     res.json(responsePayload);
   } catch (error: any) {
     console.error('getPublicBusiness error:', error);
