@@ -17,13 +17,11 @@ import {
   MessageCircle,
   Copy,
   Check,
-  PartyPopper,
 } from 'lucide-react';
 import { api, getFullImageUrl, getInitialPublicBusiness } from '../services/api';
 import { PublicBusinessData, BusinessLink } from '../types';
 import { IconRenderer } from '../components/IconRenderer';
 import { AdminQuickAccessModal } from '../components/AdminQuickAccessModal';
-import { GrandOpeningModal } from '../components/GrandOpeningModal';
 import { useToast } from '../context/ToastContext';
 
 // Helpers to safely format link hrefs with proper protocol and handling
@@ -123,7 +121,6 @@ export const PublicBusinessPage: React.FC = () => {
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [hoursModalOpen, setHoursModalOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
-  const [grandOpeningModalOpen, setGrandOpeningModalOpen] = useState(true);
   const [qrCodeData, setQrCodeData] = useState<{ publicUrl: string; qrDataUrl: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -451,39 +448,6 @@ export const PublicBusinessPage: React.FC = () => {
             )}
           </div>
         )}
-
-        {/* Grand Opening Showcase Banner Card */}
-        <div
-          onClick={() => setGrandOpeningModalOpen(true)}
-          className="w-full cursor-pointer bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white rounded-3xl p-4 mb-6 shadow-lg shadow-orange-500/20 border-2 border-amber-300 hover:scale-[1.01] active:scale-[0.99] transition-all group relative overflow-hidden"
-          role="button"
-          tabIndex={0}
-          title="Click to view Grand Opening details"
-        >
-          <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-white/10 rounded-full pointer-events-none" />
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/30 group-hover:scale-110 transition-transform shadow-inner">
-                <PartyPopper className="w-6 h-6 text-yellow-200" />
-              </div>
-              <div className="text-left min-w-0">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/25 text-yellow-200 text-[10px] font-extrabold uppercase tracking-wider mb-1">
-                  <Sparkles className="w-3 h-3 text-yellow-300" />
-                  <span>🌸 नवरात्रि का पहला दिन • Grand Opening</span>
-                </div>
-                <h3 className="font-black text-base sm:text-lg tracking-tight text-white flex items-center gap-2 truncate">
-                  <span>भव्य शुभारंभ: 11 / 10 / 2026</span>
-                </h3>
-                <p className="text-xs text-amber-100 font-medium line-clamp-1">
-                  11 अक्टूबर 2026 • आप सभी सादर आमंत्रित हैं! विवरण देखें 👉
-                </p>
-              </div>
-            </div>
-            <div className="p-2 rounded-full bg-white/20 text-white group-hover:translate-x-1 transition-transform shrink-0">
-              <ChevronRight className="w-4 h-4" />
-            </div>
-          </div>
-        </div>
 
         {/* Links List Section */}
         <div className="w-full space-y-3.5 mb-8">
@@ -824,33 +788,7 @@ export const PublicBusinessPage: React.FC = () => {
       {/* Admin Quick Access Modal (Passcode 753753) */}
       <AdminQuickAccessModal isOpen={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
 
-      {/* Floating Grand Opening Reminder Badge (When modal closed) */}
-      {!grandOpeningModalOpen && (
-        <button
-          onClick={() => setGrandOpeningModalOpen(true)}
-          className="fixed bottom-4 z-40 px-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-orange-500/30 border-2 border-yellow-300 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all cursor-pointer backdrop-blur-md animate-bounce"
-          style={{ animationDuration: '3.5s' }}
-          title="Grand Opening Announcement (11/10/2026)"
-        >
-          <PartyPopper className="w-4 h-4 text-yellow-200" />
-          <span>🎉 Grand Opening: 11/10/2026 (नवरात्रि का पहला दिन)</span>
-        </button>
-      )}
 
-      {/* Grand Opening Modal (Popup for 11/10/2026 Navratri Opening) */}
-      <GrandOpeningModal
-        isOpen={grandOpeningModalOpen}
-        onClose={() => setGrandOpeningModalOpen(false)}
-        businessName={business?.name || 'OneBite Bakery'}
-        phone={business?.phone}
-        whatsapp={business?.whatsapp}
-        mapUrl={business?.mapUrl}
-        address={
-          business?.address?.street
-            ? `${business.address.street}, ${business.address.fullAddress || ''}, ${business.address.city || 'Hamirpur'} (${business.address.state || 'UP'})`
-            : business?.address?.fullAddress || '14 Bakers Lane, Terha, Hamirpur (U.P.)'
-        }
-      />
     </div>
   );
 };
